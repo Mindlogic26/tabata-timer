@@ -51,7 +51,7 @@ export function WorkoutEditor({ initial, onSave, onCancel }: WorkoutEditorProps)
       </header>
 
       <form className="mt-4 flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
-        <div className="safe-x flex-1 space-y-3 overflow-y-auto pb-4">
+        <div className="safe-x flex-1 space-y-2 overflow-y-auto pb-4">
           <section className="rounded-3xl bg-zinc-900 p-4">
             <label htmlFor="workout-name" className="text-2xl font-black">
               Name

@@ -10,6 +10,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Registration lives in src/sw-updates.ts so a workout can delay the reload.
+      injectRegister: null,
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Tabata Timer',
@@ -47,6 +49,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
         navigateFallback: 'index.html',
+        // A new worker takes over immediately, then the page reloads when it is safe.
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
