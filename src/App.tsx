@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { TemplateList } from './components/TemplateList.tsx'
 import { TimerScreen } from './components/TimerScreen.tsx'
 import { WorkoutEditor } from './components/WorkoutEditor.tsx'
 import { WorkoutList } from './components/WorkoutList.tsx'
@@ -7,7 +8,8 @@ import type { Workout } from './types.ts'
 
 type Screen =
   | { name: 'list' }
-  | { name: 'edit'; workoutId: string | null }
+  | { name: 'templates' }
+  | { name: 'edit'; workoutId: string | null; draft: Workout | null }
   | { name: 'timer'; workoutId: string }
 
 function App() {
@@ -32,6 +34,14 @@ function App() {
     persist(workouts.filter((item) => item.id !== workout.id))
   }
 
+  function openNew() {
+    setScreen({ name: 'templates' })
+  }
+
+  function openEdit(workout: Workout) {
+    setScreen({ name: 'edit', workoutId: workout.id, draft: null })
+  }
+
   if (screen.name === 'timer') {
     const workout = workouts.find((item) => item.id === screen.workoutId)
     if (!workout) {
@@ -39,13 +49,22 @@ function App() {
         <WorkoutList
           workouts={workouts}
           onStart={(item) => setScreen({ name: 'timer', workoutId: item.id })}
-          onEdit={(item) => setScreen({ name: 'edit', workoutId: item.id })}
-          onCreate={() => setScreen({ name: 'edit', workoutId: null })}
+          onEdit={openEdit}
+          onCreate={openNew}
           onDelete={deleteWorkout}
         />
       )
     }
     return <TimerScreen workout={workout} onExit={() => setScreen({ name: 'list' })} />
+  }
+
+  if (screen.name === 'templates') {
+    return (
+      <TemplateList
+        onChoose={(draft) => setScreen({ name: 'edit', workoutId: null, draft })}
+        onCancel={() => setScreen({ name: 'list' })}
+      />
+    )
   }
 
   if (screen.name === 'edit') {
@@ -57,8 +76,8 @@ function App() {
         <WorkoutList
           workouts={workouts}
           onStart={(item) => setScreen({ name: 'timer', workoutId: item.id })}
-          onEdit={(item) => setScreen({ name: 'edit', workoutId: item.id })}
-          onCreate={() => setScreen({ name: 'edit', workoutId: null })}
+          onEdit={openEdit}
+          onCreate={openNew}
           onDelete={deleteWorkout}
         />
       )
@@ -66,6 +85,7 @@ function App() {
     return (
       <WorkoutEditor
         initial={initial}
+        preset={initial ? null : screen.draft}
         onSave={saveWorkout}
         onCancel={() => setScreen({ name: 'list' })}
       />
@@ -76,8 +96,8 @@ function App() {
     <WorkoutList
       workouts={workouts}
       onStart={(workout) => setScreen({ name: 'timer', workoutId: workout.id })}
-      onEdit={(workout) => setScreen({ name: 'edit', workoutId: workout.id })}
-      onCreate={() => setScreen({ name: 'edit', workoutId: null })}
+      onEdit={openEdit}
+      onCreate={openNew}
       onDelete={deleteWorkout}
     />
   )

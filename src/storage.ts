@@ -5,12 +5,12 @@ import { CLASSIC_TABATA, normalizeWorkout } from './workout.ts'
 // Clearing the browser's site data deletes the workouts.
 const STORAGE_KEY = 'tabata-timer-workouts'
 
-function isWorkout(value: unknown): value is Workout {
-  if (typeof value !== 'object' || value === null) return false
+function parseWorkout(value: unknown): Workout | null {
+  if (typeof value !== 'object' || value === null) return null
   const record = value as Record<string, unknown>
-  if (typeof record.id !== 'string' || typeof record.name !== 'string') return false
+  if (typeof record.id !== 'string' || typeof record.name !== 'string') return null
 
-  const candidate: Workout = {
+  return normalizeWorkout({
     id: record.id,
     name: record.name,
     prepareSeconds: record.prepareSeconds as number,
@@ -20,8 +20,8 @@ function isWorkout(value: unknown): value is Workout {
     cycles: record.cycles as number,
     restBetweenCyclesSeconds: record.restBetweenCyclesSeconds as number,
     cooldownSeconds: record.cooldownSeconds as number,
-  }
-  return normalizeWorkout(candidate) !== null
+    exercises: Array.isArray(record.exercises) ? record.exercises.filter((item) => typeof item === 'string') : [],
+  })
 }
 
 function seed(): Workout[] {
@@ -42,7 +42,10 @@ export function loadWorkouts(): Workout[] {
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return seed()
 
-    const workouts = parsed.filter(isWorkout)
+    const workouts = parsed.flatMap((item) => {
+      const workout = parseWorkout(item)
+      return workout ? [workout] : []
+    })
     if (workouts.length !== parsed.length) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(workouts))
     }

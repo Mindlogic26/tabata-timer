@@ -14,6 +14,12 @@ export interface Workout {
   restBetweenCyclesSeconds: number
   /** Seconds. 0 skips this phase. */
   cooldownSeconds: number
+  /**
+   * Optional names for the work periods.
+   * Round 1 uses the first name, then the next, then it starts again.
+   * An empty list keeps the plain "Work" label.
+   */
+  exercises: string[]
 }
 
 /** One slice of a workout, already expanded into the order it will be played. */

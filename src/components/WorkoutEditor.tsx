@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { formatDuration, formatSetting } from '../format.ts'
 import { PHASE_META } from '../phases.ts'
 import { Stepper } from './Stepper.tsx'
 import type { Workout } from '../types.ts'
 import {
+  cleanExercises,
   createDraft,
   LIMITS,
   normalizeWorkout,
@@ -13,16 +14,66 @@ import {
 
 interface WorkoutEditorProps {
   initial: Workout | null
+  /** Filled in from a template. Ignored when editing a saved workout. */
+  preset: Workout | null
   onSave: (workout: Workout) => void
   onCancel: () => void
 }
 
+function copyWorkout(workout: Workout): Workout {
+  return { ...workout, exercises: [...(workout.exercises ?? [])] }
+}
+
 const NEUTRAL = '#A1A1AA'
 
-export function WorkoutEditor({ initial, onSave, onCancel }: WorkoutEditorProps) {
-  const [draft, setDraft] = useState<Workout>(() => (initial ? { ...initial } : createDraft()))
+export function WorkoutEditor({ initial, preset, onSave, onCancel }: WorkoutEditorProps) {
+  const [draft, setDraft] = useState<Workout>(() => copyWorkout(initial ?? preset ?? createDraft()))
+  const focusNewExercise = useRef(false)
   const cleaned = normalizeWorkout(draft)
   const canSave = cleaned !== null
+  const exerciseCount = cleanExercises(draft.exercises).length
+
+  useEffect(() => {
+    if (!focusNewExercise.current) return
+    focusNewExercise.current = false
+    const inputs = document.querySelectorAll<HTMLInputElement>('[data-exercise-input]')
+    inputs[inputs.length - 1]?.focus()
+  }, [draft.exercises.length])
+
+  function updateExercise(index: number, name: string) {
+    setDraft((current) => {
+      const exercises = current.exercises.slice()
+      exercises[index] = name.slice(0, LIMITS.exerciseName.max)
+      return { ...current, exercises }
+    })
+  }
+
+  function moveExercise(index: number, direction: -1 | 1) {
+    setDraft((current) => {
+      const target = index + direction
+      if (target < 0 || target >= current.exercises.length) return current
+      const exercises = current.exercises.slice()
+      const [item] = exercises.splice(index, 1)
+      exercises.splice(target, 0, item ?? '')
+      return { ...current, exercises }
+    })
+  }
+
+  function removeExercise(index: number) {
+    setDraft((current) => ({
+      ...current,
+      exercises: current.exercises.filter((_, itemIndex) => itemIndex !== index),
+    }))
+  }
+
+  function addExercise() {
+    if (draft.exercises.length >= LIMITS.exercises.max) return
+    focusNewExercise.current = true
+    setDraft((current) => {
+      if (current.exercises.length >= LIMITS.exercises.max) return current
+      return { ...current, exercises: [...current.exercises, ''] }
+    })
+  }
 
   function bump(field: CountField, delta: number) {
     setDraft((current) => {
@@ -70,6 +121,76 @@ export function WorkoutEditor({ initial, onSave, onCancel }: WorkoutEditorProps)
                 setDraft((current) => ({ ...current, name }))
               }}
             />
+          </section>
+
+          <section className="rounded-3xl bg-zinc-900 px-3 py-3">
+            <h2 className="text-xl font-black">Exercises</h2>
+            <p className="mt-1 text-sm leading-snug text-zinc-400">
+              Optional. Round 1 uses the first name, then the next, and it starts again. Leave this
+              empty to keep showing Work.
+            </p>
+            {draft.exercises.length > 0 && (
+              <ul className="mt-3 space-y-2">
+                {draft.exercises.map((exercise, index) => {
+                  const label = exercise.trim() || `exercise ${index + 1}`
+                  return (
+                    <li key={index} className="flex items-center gap-2">
+                      <input
+                        data-exercise-input
+                        value={exercise}
+                        maxLength={LIMITS.exerciseName.max}
+                        autoComplete="off"
+                        autoCapitalize="words"
+                        enterKeyHint="done"
+                        placeholder="Push-ups"
+                        aria-label={`Exercise ${index + 1}`}
+                        className="min-w-0 flex-1 rounded-2xl bg-zinc-800 px-3 py-3 text-xl font-bold text-white outline-none placeholder:text-zinc-500 focus:ring-4 focus:ring-white"
+                        onChange={(event) => updateExercise(index, event.target.value)}
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Move ${label} up`}
+                        disabled={index === 0}
+                        className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-zinc-800 text-2xl font-black disabled:opacity-30"
+                        onClick={() => moveExercise(index, -1)}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Move ${label} down`}
+                        disabled={index === draft.exercises.length - 1}
+                        className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-zinc-800 text-2xl font-black disabled:opacity-30"
+                        onClick={() => moveExercise(index, 1)}
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${label}`}
+                        className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-zinc-800 text-2xl font-black"
+                        onClick={() => removeExercise(index)}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+            <button
+              type="button"
+              className="mt-3 h-14 w-full rounded-2xl bg-zinc-800 text-xl font-black disabled:opacity-30"
+              disabled={draft.exercises.length >= LIMITS.exercises.max}
+              onClick={addExercise}
+            >
+              Add exercise
+            </button>
+            {exerciseCount > 0 && draft.rounds > exerciseCount && (
+              <p className="mt-2 text-sm leading-snug text-zinc-400">
+                {exerciseCount === 1 ? 'This name repeats' : 'These names repeat'} after round {exerciseCount}.
+              </p>
+            )}
           </section>
 
           <Stepper

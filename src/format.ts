@@ -27,6 +27,19 @@ export function formatTimeLeft(milliseconds: number): string {
   return clock
 }
 
+/** Template card length, such as "4 min 10s" or "45s". */
+export function formatSpokenDuration(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.round(totalSeconds))
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const rest = seconds % 60
+  const parts: string[] = []
+  if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'hr' : 'hrs'}`)
+  if (minutes > 0) parts.push(`${minutes} min`)
+  if (rest > 0 || parts.length === 0) parts.push(`${rest}s`)
+  return parts.join(' ')
+}
+
 /** Editor value. Zero means that phase is left out. */
 export function formatSetting(totalSeconds: number): string {
   if (totalSeconds <= 0) return 'Off'

@@ -3,9 +3,22 @@ import { setWorkoutInProgress } from '../sw-updates.ts'
 import { formatCountdown, formatDuration, formatTimeLeft } from '../format.ts'
 import { PHASE_META } from '../phases.ts'
 import { buildPhaseSequence, getPhasePosition, workoutElapsedRatio, workoutRemainingMs } from '../sequence.ts'
-import type { Workout } from '../types.ts'
+import type { Phase, Workout } from '../types.ts'
 import { useTimer } from '../useTimer.ts'
-import { totalSeconds } from '../workout.ts'
+import { exerciseNameForRound, totalSeconds } from '../workout.ts'
+
+function phaseLabel(workout: Workout, phase: Phase): string {
+  if (phase.kind === 'work') {
+    return exerciseNameForRound(workout.exercises, phase.round ?? 1) ?? PHASE_META.work.label
+  }
+  return PHASE_META[phase.kind].label
+}
+
+function phaseTitleSize(label: string): string {
+  if (label.length > 18) return 'clamp(1.35rem, 6vw, 2rem)'
+  if (label.length > 10) return 'clamp(1.75rem, 8vw, 2.75rem)'
+  return 'clamp(2rem, 9vw, 3.25rem)'
+}
 
 interface TimerScreenProps {
   workout: Workout
@@ -21,6 +34,7 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
   const phase = phases[timer.phaseIndex]
   const done = timer.status === 'done' || !phase
   const meta = !done && phase ? PHASE_META[phase.kind] : null
+  const label = !done && phase ? phaseLabel(workout, phase) : null
   const background = meta?.color ?? '#0A0A0A'
   const ink = meta?.ink ?? '#ffffff'
   const next = phase ? phases[timer.phaseIndex + 1] : undefined
@@ -54,8 +68,8 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
     const theme = document.querySelector('meta[name="theme-color"]')
     document.body.style.background = background
     theme?.setAttribute('content', background)
-    document.title = done || !meta ? 'Done · Tabata Timer' : `${meta.label} ${countdown} · Tabata Timer`
-  }, [background, done, meta, countdown])
+    document.title = done || !label ? 'Done · Tabata Timer' : `${label} ${countdown} · Tabata Timer`
+  }, [background, done, label, countdown])
 
   function askToExit() {
     wasRunningRef.current = timer.status === 'running'
@@ -107,11 +121,11 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
 
       <div className="safe-x flex min-h-0 flex-1 flex-col items-center justify-center">
         <h1
-          className="text-center font-black uppercase leading-none tracking-tight"
-          style={{ fontSize: 'clamp(2rem, 9vw, 3.25rem)' }}
+          className="max-w-full text-center font-black uppercase leading-tight tracking-tight"
+          style={{ fontSize: phaseTitleSize(label ?? '') }}
           aria-live="polite"
         >
-          {meta?.label}
+          {label}
         </h1>
         {timer.status === 'paused' && (
           <p className="mt-2 text-center text-3xl font-black tracking-wide">Paused</p>
@@ -141,8 +155,8 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
           <p className="text-sm font-black tracking-widest uppercase text-white/70">Up next</p>
           <p className="text-xl font-black tabular-nums">{timeLeft} left</p>
         </div>
-        <p className="mt-1 text-2xl font-black leading-none">
-          {next ? `${PHASE_META[next.kind].label} · ${formatDuration(next.durationMs / 1000)}` : 'Done'}
+        <p className="mt-1 truncate text-2xl font-black leading-none">
+          {next ? `${phaseLabel(workout, next)} · ${formatDuration(next.durationMs / 1000)}` : 'Done'}
         </p>
       </div>
 
