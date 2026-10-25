@@ -20,7 +20,7 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
   const phase = phases[timer.phaseIndex]
   const done = timer.status === 'done' || !phase
   const meta = !done && phase ? PHASE_META[phase.kind] : null
-  const background = meta?.color ?? '#09090b'
+  const background = meta?.color ?? '#0A0A0A'
   const ink = meta?.ink ?? '#ffffff'
   const next = phase ? phases[timer.phaseIndex + 1] : undefined
   const progress = phase && !done ? getProgress(phase, workout) : { roundsLeft: 0, cyclesLeft: 0 }
@@ -58,7 +58,7 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
 
   if (done) {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center bg-zinc-950 px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] text-white">
+      <div className="safe-x-lg fixed inset-0 flex flex-col items-center justify-center bg-[#0A0A0A] pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] text-white">
         <p className="text-center text-7xl font-black tracking-tight">Done</p>
         <p className="mt-4 text-center text-3xl font-black">{workout.name}</p>
         <p className="mt-2 text-center text-2xl font-bold text-zinc-300">
@@ -80,7 +80,7 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
       className="fixed inset-0 flex flex-col"
       style={{ backgroundColor: background, color: ink }}
     >
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <div className="safe-x flex min-h-0 flex-1 flex-col items-center justify-center pt-[max(0.75rem,env(safe-area-inset-top))]">
         <h1
           className="text-center font-black uppercase leading-none tracking-tight"
           style={{ fontSize: 'clamp(2.75rem, 12vw, 4.75rem)' }}
@@ -99,7 +99,7 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 px-4 pb-4 text-center">
+      <div className="safe-x grid grid-cols-2 gap-3 pb-4 text-center">
         <div>
           <p className="text-5xl font-black tabular-nums leading-none">{progress.roundsLeft}</p>
           <p className="mt-1 text-lg font-black">
@@ -114,14 +114,14 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
         </div>
       </div>
 
-      <div className="bg-black/80 px-4 py-4 text-white">
+      <div className="safe-x bg-black/80 py-4 text-white">
         <p className="text-sm font-black tracking-widest uppercase text-white/70">Up next</p>
         <p className="mt-1 text-3xl font-black leading-none">
           {next ? `${PHASE_META[next.kind].label} · ${formatDuration(next.durationMs / 1000)}` : 'Done'}
         </p>
       </div>
 
-      <div className="grid gap-3 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="safe-x grid gap-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {timer.status === 'paused' ? (
           <button
             type="button"
@@ -157,7 +157,7 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
       </div>
 
       {confirmingExit && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/80 px-6 text-white">
+        <div className="safe-x-lg absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/80 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] text-white">
           <p className="text-center text-4xl font-black">End this workout?</p>
           <button
             type="button"

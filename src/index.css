@@ -2,14 +2,14 @@
 
 html {
   height: 100%;
-  background: #09090b;
+  background: #0a0a0a;
   color-scheme: dark;
 }
 
 body {
   margin: 0;
   min-height: 100%;
-  background: #09090b;
+  background: #0a0a0a;
   color: #fafafa;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -21,6 +21,18 @@ body {
 
 #root {
   min-height: 100dvh;
+}
+
+/* Side insets. Top and bottom are applied on each screen so the colored
+   timer can still paint underneath the notch and the home indicator. */
+.safe-x {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+.safe-x-lg {
+  padding-left: max(1.5rem, env(safe-area-inset-left));
+  padding-right: max(1.5rem, env(safe-area-inset-right));
 }
 
 button,

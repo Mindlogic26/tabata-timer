@@ -16,13 +16,13 @@ export function WorkoutList({ workouts, onStart, onEdit, onCreate, onDelete }: W
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col bg-zinc-950 text-white">
-      <header className="px-4 pt-[max(1.25rem,env(safe-area-inset-top))]">
+    <div className="mx-auto flex h-dvh w-full max-w-lg flex-col bg-[#0A0A0A] text-white">
+      <header className="safe-x pt-[max(1.25rem,env(safe-area-inset-top))]">
         <h1 className="text-5xl font-black tracking-tight">Tabata</h1>
         <p className="mt-1 text-lg font-bold text-zinc-400">Saved on this phone</p>
       </header>
 
-      <div className="mt-5 flex-1 space-y-4 overflow-y-auto px-4 pb-4">
+      <div className="safe-x mt-5 flex-1 space-y-4 overflow-y-auto pb-4">
         {workouts.length === 0 && (
           <p className="rounded-3xl bg-zinc-900 px-5 py-8 text-center text-2xl font-bold text-zinc-300">
             No workouts yet. Create one to get started.
@@ -98,7 +98,7 @@ export function WorkoutList({ workouts, onStart, onEdit, onCreate, onDelete }: W
         })}
       </div>
 
-      <div className="border-t border-white/10 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="safe-x border-t border-white/10 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <button
           type="button"
           className="h-16 w-full rounded-2xl bg-white text-2xl font-black text-black active:scale-[0.98]"
