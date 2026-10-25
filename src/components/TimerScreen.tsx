@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { formatCountdown, formatDuration } from '../format.ts'
+import { formatCountdown, formatDuration, formatTimeLeft } from '../format.ts'
 import { PHASE_META } from '../phases.ts'
-import { buildPhaseSequence, getProgress } from '../sequence.ts'
+import { buildPhaseSequence, getPhasePosition, workoutElapsedRatio, workoutRemainingMs } from '../sequence.ts'
 import type { Workout } from '../types.ts'
 import { useTimer } from '../useTimer.ts'
 import { totalSeconds } from '../workout.ts'
@@ -23,9 +23,13 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
   const background = meta?.color ?? '#0A0A0A'
   const ink = meta?.ink ?? '#ffffff'
   const next = phase ? phases[timer.phaseIndex + 1] : undefined
-  const progress = phase && !done ? getProgress(phase, workout) : { roundsLeft: 0, cyclesLeft: 0 }
+  const position = phase && !done ? getPhasePosition(phase, workout) : null
   const countdown = formatCountdown(timer.remainingMs)
-  const countdownSize = countdown.length <= 2 ? 'min(52vw, 34vh)' : 'min(24vw, 22vh)'
+  const countdownSize =
+    countdown.length <= 2 ? 'min(74vw, 46vh)' : countdown.length <= 4 ? 'min(32vw, 28vh)' : 'min(22vw, 20vh)'
+  const timeLeft = formatTimeLeft(workoutRemainingMs(phases, timer.phaseIndex, timer.remainingMs))
+  const elapsed = workoutElapsedRatio(phases, timer.phaseIndex, timer.remainingMs)
+  const elapsedPercent = Math.round(elapsed * 100)
 
   useEffect(() => {
     const theme = document.querySelector('meta[name="theme-color"]')
@@ -77,55 +81,76 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
 
   return (
     <div
-      className="fixed inset-0 flex flex-col"
+      className="fixed inset-0 flex flex-col overflow-hidden"
       style={{ backgroundColor: background, color: ink }}
     >
-      <div className="safe-x flex min-h-0 flex-1 flex-col items-center justify-center pt-[max(0.75rem,env(safe-area-inset-top))]">
+      <div className="shrink-0 pt-[env(safe-area-inset-top)]">
+        <div
+          className="h-1.5 w-full bg-black/25"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={elapsedPercent}
+          aria-label="Workout progress"
+        >
+          <div className="h-full" style={{ width: `${elapsedPercent}%`, backgroundColor: ink }} />
+        </div>
+      </div>
+
+      <div className="safe-x flex min-h-0 flex-1 flex-col items-center justify-center">
         <h1
           className="text-center font-black uppercase leading-none tracking-tight"
-          style={{ fontSize: 'clamp(2.75rem, 12vw, 4.75rem)' }}
+          style={{ fontSize: 'clamp(2rem, 9vw, 3.25rem)' }}
           aria-live="polite"
         >
           {meta?.label}
         </h1>
         {timer.status === 'paused' && (
-          <p className="mt-3 text-center text-4xl font-black tracking-wide">Paused</p>
+          <p className="mt-2 text-center text-3xl font-black tracking-wide">Paused</p>
         )}
         <p
-          className="mt-2 text-center font-black tabular-nums leading-none tracking-tight"
+          className="mt-1 text-center font-black tabular-nums leading-[0.85] tracking-tight"
           style={{ fontSize: countdownSize }}
         >
           {countdown}
         </p>
+        {position && (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-1 text-xl font-black tracking-wide">
+            <p>
+              ROUND {position.round} / {workout.rounds}
+            </p>
+            {workout.cycles > 1 && (
+              <p>
+                CYCLE {position.cycle} / {workout.cycles}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="safe-x grid grid-cols-2 gap-3 pb-4 text-center">
-        <div>
-          <p className="text-5xl font-black tabular-nums leading-none">{progress.roundsLeft}</p>
-          <p className="mt-1 text-lg font-black">
-            {progress.roundsLeft === 1 ? 'round left' : 'rounds left'}
-          </p>
+      <div className="safe-x bg-black/80 py-3 text-white">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-sm font-black tracking-widest uppercase text-white/70">Up next</p>
+          <p className="text-xl font-black tabular-nums">{timeLeft} left</p>
         </div>
-        <div>
-          <p className="text-5xl font-black tabular-nums leading-none">{progress.cyclesLeft}</p>
-          <p className="mt-1 text-lg font-black">
-            {progress.cyclesLeft === 1 ? 'cycle left' : 'cycles left'}
-          </p>
-        </div>
-      </div>
-
-      <div className="safe-x bg-black/80 py-4 text-white">
-        <p className="text-sm font-black tracking-widest uppercase text-white/70">Up next</p>
-        <p className="mt-1 text-3xl font-black leading-none">
+        <p className="mt-1 text-2xl font-black leading-none">
           {next ? `${PHASE_META[next.kind].label} · ${formatDuration(next.durationMs / 1000)}` : 'Done'}
         </p>
       </div>
 
-      <div className="safe-x grid gap-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="safe-x flex items-center gap-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <button
+          type="button"
+          aria-label="Skip"
+          className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white text-black"
+          onClick={skip}
+        >
+          <SkipIcon />
+        </button>
         {timer.status === 'paused' ? (
           <button
             type="button"
-            className="h-16 rounded-2xl bg-white text-2xl font-black text-black"
+            className="h-16 min-w-0 flex-1 rounded-2xl bg-white text-2xl font-black text-black"
             onClick={resume}
           >
             Resume
@@ -133,7 +158,7 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
         ) : (
           <button
             type="button"
-            className="h-16 rounded-2xl bg-white text-2xl font-black text-black"
+            className="h-16 min-w-0 flex-1 rounded-2xl bg-white text-2xl font-black text-black"
             onClick={pause}
           >
             Pause
@@ -141,24 +166,24 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
         )}
         <button
           type="button"
-          className="h-16 rounded-2xl bg-white text-2xl font-black text-black"
-          onClick={skip}
-        >
-          Skip
-        </button>
-        <button
-          type="button"
-          className="h-16 rounded-2xl border-4 bg-transparent text-2xl font-black"
-          style={{ borderColor: ink, color: ink }}
+          aria-label="Exit"
+          className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white text-black"
           onClick={askToExit}
         >
-          Exit
+          <ExitIcon />
         </button>
       </div>
 
       {confirmingExit && (
-        <div className="safe-x-lg absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/80 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] text-white">
-          <p className="text-center text-4xl font-black">End this workout?</p>
+        <div
+          className="safe-x-lg absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/80 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] text-white"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="end-workout-title"
+        >
+          <p id="end-workout-title" className="text-center text-4xl font-black">
+            End this workout?
+          </p>
           <button
             type="button"
             className="h-16 w-full max-w-sm rounded-2xl bg-white text-2xl font-black text-black"
@@ -176,5 +201,22 @@ export function TimerScreen({ workout, onExit }: TimerScreenProps) {
         </div>
       )}
     </div>
+  )
+}
+
+function SkipIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="currentColor" aria-hidden="true">
+      <path d="M4 5.5v13l10-6.5L4 5.5z" />
+      <path d="M16 5.5h3.5v13H16z" />
+    </svg>
+  )
+}
+
+function ExitIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2.75" strokeLinecap="round" />
+    </svg>
   )
 }

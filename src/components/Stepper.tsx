@@ -12,19 +12,21 @@ interface StepperProps {
 
 export function Stepper({ label, hint, value, swatch, atMin, atMax, onStep }: StepperProps) {
   return (
-    <section className="rounded-3xl bg-zinc-900 p-4">
-      <div className="flex items-center gap-3">
+    <section className="rounded-3xl bg-zinc-900 px-3 py-3">
+      <div className="flex items-center gap-2">
         <span
-          className="h-5 w-5 shrink-0 rounded-full"
+          className="h-4 w-4 shrink-0 rounded-full"
           style={{ backgroundColor: swatch }}
           aria-hidden="true"
         />
-        <h2 className="text-2xl font-black">{label}</h2>
+        <h2 className="text-xl font-black leading-none">{label}</h2>
       </div>
-      <p className="mt-1 text-base leading-snug text-zinc-400">{hint}</p>
-      <p className="mt-3 text-center text-6xl font-black tabular-nums leading-none">{value}</p>
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <p className="mt-1 text-sm leading-snug text-zinc-400">{hint}</p>
+      <div className="mt-2 flex items-center gap-3">
         <HoldButton label={`Decrease ${label}`} sign="−" delta={-1} blocked={atMin} onStep={onStep} />
+        <p className="min-w-0 flex-1 text-center text-[clamp(2rem,9vw,3rem)] font-black tabular-nums leading-none">
+          {value}
+        </p>
         <HoldButton label={`Increase ${label}`} sign="+" delta={1} blocked={atMax} onStep={onStep} />
       </div>
     </section>
@@ -108,7 +110,7 @@ function HoldButton({
     <button
       type="button"
       aria-label={label}
-      className={`h-20 touch-none rounded-2xl bg-zinc-800 text-5xl font-black leading-none active:bg-zinc-700 ${blocked ? 'opacity-30' : ''}`}
+      className={`h-16 w-16 shrink-0 touch-none rounded-2xl bg-zinc-800 text-4xl font-black leading-none active:bg-zinc-700 ${blocked ? 'opacity-30' : ''}`}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerCancel={stop}

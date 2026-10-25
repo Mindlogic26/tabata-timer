@@ -9,9 +9,9 @@ import type { Phase, PhaseKind, Workout } from './types.ts'
 //   3. After every cycle except the last: rest between cycles
 //   4. Cooldown, once at the end
 
-export interface PhaseProgress {
-  roundsLeft: number
-  cyclesLeft: number
+export interface PhasePosition {
+  round: number
+  cycle: number
 }
 
 function pushPhase(
@@ -49,22 +49,45 @@ export function buildPhaseSequence(workout: Workout): Phase[] {
   return phases
 }
 
-/** How many rounds and cycles are still ahead, counting the one in progress. */
-export function getProgress(phase: Phase, workout: Workout): PhaseProgress {
-  if (phase.kind === 'prepare') {
-    return { roundsLeft: workout.rounds, cyclesLeft: workout.cycles }
-  }
+/** Where this phase sits in the workout, as "round 3 of 8". */
+export function getPhasePosition(phase: Phase, workout: Workout): PhasePosition {
   if (phase.kind === 'work' || phase.kind === 'rest') {
-    return {
-      roundsLeft: workout.rounds - (phase.round ?? 1) + 1,
-      cyclesLeft: workout.cycles - (phase.cycle ?? 1) + 1,
-    }
+    return { round: phase.round ?? 1, cycle: phase.cycle ?? 1 }
   }
   if (phase.kind === 'cycleRest') {
-    return {
-      roundsLeft: workout.rounds,
-      cyclesLeft: workout.cycles - (phase.cycle ?? 1),
-    }
+    return { round: workout.rounds, cycle: phase.cycle ?? 1 }
   }
-  return { roundsLeft: 0, cyclesLeft: 0 }
+  if (phase.kind === 'cooldown') {
+    return { round: workout.rounds, cycle: workout.cycles }
+  }
+  return { round: 1, cycle: 1 }
+}
+
+export function workoutDurationMs(phases: Phase[]): number {
+  return phases.reduce((total, phase) => total + phase.durationMs, 0)
+}
+
+/** Time still to go, including the rest of the current phase. */
+export function workoutRemainingMs(
+  phases: Phase[],
+  phaseIndex: number,
+  phaseRemainingMs: number,
+): number {
+  let remaining = Math.max(0, phaseRemainingMs)
+  for (let index = phaseIndex + 1; index < phases.length; index += 1) {
+    remaining += phases[index].durationMs
+  }
+  return remaining
+}
+
+/** 0 at the start of the workout, 1 when it is finished. */
+export function workoutElapsedRatio(
+  phases: Phase[],
+  phaseIndex: number,
+  phaseRemainingMs: number,
+): number {
+  const total = workoutDurationMs(phases)
+  if (total <= 0) return 1
+  const left = workoutRemainingMs(phases, phaseIndex, phaseRemainingMs)
+  return Math.min(1, Math.max(0, (total - left) / total))
 }
